@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Laboratorio Python IPTV Web</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #1e2a38; color: #e0e7ff; margin: 0; }
+        .tab { display: none; }
+        .tab.active { display: block; }
+        .tabs { margin-bottom: 20px; }
+        .tabs button { background: #263548; color: #e0e7ff; border: none; padding: 10px 20px; margin-right: 2px; border-radius: 8px 8px 0 0; cursor: pointer; }
+        .tabs button.active { background: #0288d1; color: #fff; }
+        .group-list, .channel-list { max-height: 200px; overflow-y: auto; background: #2e3b4e; border-radius: 6px; padding: 10px; }
+        .channel-list label, .group-list label { display: block; margin-bottom: 4px; }
+        .result-list { background: #2e3b4e; border-radius: 6px; padding: 10px; margin-top: 10px; }
+        .btn { background: #0288d1; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; margin: 5px 0; }
+        .btn:disabled { background: #3b4a5a; color: #aaa; }
+        input[type="text"] { background: #2e3b4e; color: #e0e7ff; border: 1px solid #3b4a5a; border-radius: 6px; padding: 6px; width: 60%; }
+        #bienvenida-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(30,42,56,0.98); color: #e0e7ff; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #bienvenida-content {
+            background: #263548; border-radius: 16px; padding: 32px 32px 24px 32px; max-width: 420px; box-shadow: 0 0 24px #0008;
+            text-align: center;
+        }
+        #bienvenida-content h2 { color: #0288d1; margin-bottom: 12px; }
+        #bienvenida-content p { color: #e0e7ff; margin-bottom: 18px; }
+        #bienvenida-content ul { text-align: left; margin: 0 0 18px 0; }
+        #bienvenida-content button { margin-top: 10px; }
+        footer {
+            background: #263548; color: #b0c4de; text-align: center; padding: 12px 0 6px 0;
+            position: fixed; left: 0; bottom: 0; width: 100vw; font-size: 15px; border-top: 1px solid #0288d1;
+        }
+        .footer-autor { color: #0288d1; font-weight: bold; }
+        .tooltip {
+            border-bottom: 1px dotted #0288d1; cursor: help;
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de bienvenida -->
+    <div id="bienvenida-modal">
+        <div id="bienvenida-content">
+            <h2>¡Bienvenido al Laboratorio Python IPTV!</h2>
+            <p>Este sitio te permite descargar, filtrar y crear listas M3U personalizadas de IPTV.</p>
+            <ul>
+                <li><b>1. Grupos:</b> Carga una URL M3U y selecciona los grupos de canales.</li>
+                <li><b>2. Canales:</b> Selecciona los canales específicos dentro de los grupos.</li>
+                <li><b>3. Verificar:</b> Comprueba cuáles canales están activos.</li>
+                <li><b>4. Guardar:</b> Descarga tu lista personalizada (M3U o TXT).</li>
+            </ul>
+            <div style="color:#0288d1; font-weight:bold; margin-bottom:10px;">Fundadores: Percia, Charly, Cesar y Paula</div>
+            <button class="btn" onclick="ocultarBienvenida()">Comenzar</button>
+        </div>
+    </div>
+
+    <h1>Laboratorio Python IPTV Web</h1>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab(0)" title="Selecciona los grupos de canales">1. Grupos</button>
+        <button class="tab-btn" onclick="showTab(1)" title="Elige los canales de los grupos">2. Canales</button>
+        <button class="tab-btn" onclick="showTab(2)" title="Verifica qué canales están activos">3. Verificar</button>
+        <button class="tab-btn" onclick="showTab(3)" title="Descarga tu lista personalizada">4. Guardar</button>
+    </div>
+    <div id="tab0" class="tab active">
+        <h3>Cargar lista M3U</h3>
+        <input type="text" id="url" placeholder="URL de tu lista M3U" title="Introduce aquí la URL de la lista M3U que deseas cargar">
+        <button class="btn" onclick="cargarM3U()" title="Descargar y cargar los grupos de canales">Cargar</button>
+        <div id="grupos" class="group-list" title="Selecciona los grupos de canales que deseas incluir"></div>
+        <button class="btn" onclick="goToTab(1)" id="btnNext1" disabled title="Continuar al siguiente paso: selección de canales">Siguiente</button>
+    </div>
+    <div id="tab1" class="tab">
+        <h3>Selecciona los canales</h3>
+        <div id="canales" class="channel-list" title="Selecciona los canales que deseas incluir"></div>
+        <button class="btn" onclick="goToTab(2)" id="btnNext2" disabled title="Continuar al siguiente paso: verificación de canales">Siguiente</button>
+    </div>
+    <div id="tab2" class="tab">
+        <h3>Verificar canales activos</h3>
+        <button class="btn" onclick="verificarCanales()" id="btnVerificar" title="Comprueba qué canales están activos">Verificar</button>
+        <div id="verificacion" class="result-list" title="Lista de canales verificados y su estado"></div>
+        <button class="btn" onclick="goToTab(3)" id="btnNext3" disabled title="Continuar al siguiente paso: descargar lista">Siguiente</button>
+    </div>
+    <div id="tab3" class="tab">
+        <h3>Descargar lista filtrada</h3>
+        <button class="btn" onclick="descargarM3U()" title="Descargar los canales activos en formato M3U">Descargar M3U</button>
+        <button class="btn" onclick="descargarTXT()" title="Descargar los canales activos en formato TXT">Descargar TXT</button>
+        <div id="descarga"></div>
+    </div>
+    <footer>
+        Laboratorio Python IPTV Web &mdash; <span class="footer-autor">Creado por Charly</span>
+    </footer>
+    <script>
+        function ocultarBienvenida() {
+            document.getElementById('bienvenida-modal').style.display = 'none';
+        }
+    </script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
